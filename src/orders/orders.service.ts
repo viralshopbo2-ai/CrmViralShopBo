@@ -36,6 +36,8 @@ export class OrdersService {
 
     const sheets = google.sheets({ version: 'v4', auth });
 
+    const fechaFormateada = order.createdAt.toLocaleString(); // Formato: "4/3/2026, 19:49:00"
+
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: 'Hoja 1',
@@ -43,6 +45,7 @@ export class OrdersService {
       requestBody: {
         values: [
           [
+            fechaFormateada,
             order.nombre,
             order.apellido,
             order.telefono,

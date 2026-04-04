@@ -1,5 +1,10 @@
 // orders/order.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity()
 export class Order {
@@ -34,6 +39,9 @@ export class Order {
 
   @Column({ nullable: true })
   referencia?: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
 
   // Pedido (JSON)
   @Column({ type: 'json' })
