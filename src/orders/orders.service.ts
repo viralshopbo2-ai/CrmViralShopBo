@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { Order } from './order.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -11,6 +12,7 @@ export class OrdersService {
   constructor(
     @InjectRepository(Order)
     private repo: Repository<Order>,
+    private configService: ConfigService,
   ) {}
 
   async findAll(): Promise<Order[]> {
@@ -37,7 +39,7 @@ export class OrdersService {
     const sheets = google.sheets({ version: 'v4', auth });
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      spreadsheetId: this.configService.get<string>('GOOGLE_SHEET_ID'),
       range: 'Hoja 1',
       valueInputOption: 'USER_ENTERED',
       requestBody: {

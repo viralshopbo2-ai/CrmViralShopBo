@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OrdersModule } from './orders/orders.module';
-import { Order } from './orders/order.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as dotenv from 'dotenv';
+import { RolesModule } from './roles/roles.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 
 dotenv.config();
-
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -23,13 +23,16 @@ dotenv.config();
         username: config.get<string>('DB_USER'),
         password: config.get<string>('DB_PASSWORD'),
         database: config.get<string>('DB_NAME'),
-        entities: [Order],
-        synchronize: false,
-        migrationsRun: true
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: true,
+        migrationsRun: true,
       }),
     }),
 
     OrdersModule,
+    UsersModule,
+    RolesModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
