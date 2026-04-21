@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateRoleDto {
   @ApiProperty({
-    example: 'NombreDeEjemplo',
+    example: 'SuperAdmin',
   })
   @IsString()
   @MinLength(3)

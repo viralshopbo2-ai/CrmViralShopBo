@@ -4,12 +4,14 @@
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../roles/entities/role.entity';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class UsersService {
@@ -18,7 +20,7 @@ export class UsersService {
     private readonly userRepo: Repository<User>,
   ) {}
 
-  async create(dto: CreateUserDto): Promise<User> {
+  async create(dto: CreateUserDto, user: JwtPayload): Promise<User> {
     const { username, email, dni, password, ...userData } = dto;
 
     const existingUser = await this.userRepo.findOne({
@@ -34,23 +36,30 @@ export class UsersService {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = this.userRepo.create({
+    const userEntity = this.userRepo.create({
       ...userData,
       username: username.toLowerCase(),
       email: email.toLowerCase(),
       dni,
       password: hashedPassword,
       role: { id: dto.roleId } as Role,
+      createdBy: user.username,
     });
 
-    return await this.userRepo.save(user);
+    return await this.userRepo.save(userEntity);
   }
 
-  async findAll(): Promise<User[]> {
-    return await this.userRepo.find({
-      where: { active: true },
+  async findAll(pagination: PaginationDto): Promise<{ data: User[]; total: number; page: number; size: number }> {
+    const { page = 1, size = 10 } = pagination;
+    const skip = (page - 1) * size;
+
+    const [data, total] = await this.userRepo.findAndCount({
       relations: ['role'],
+      take: size,
+      skip,
     });
+
+    return { data, total, page, size };
   }
 
   async findOne(id: string): Promise<User> {
@@ -62,65 +71,46 @@ export class UsersService {
     return user;
   }
 
-  async updateOld(id: string, updateDto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(id);
 
-    if (updateDto.password) {
-      updateDto.password = await bcrypt.hash(updateDto.password, 10);
-    }
-    if (updateDto.roleId) {
-      user.role = { id: updateDto.roleId } as Role;
-    }
 
-    const updatedUser = this.userRepo.merge(user, updateDto);
+  async update(id: string, updateUserDto: UpdateUserDto, user: JwtPayload): Promise<User> {
+    const userEntity = await this.findOne(id);
+    const { username, email, dni, password, roleId, ...rest } = updateUserDto;
 
-    return await this.userRepo.save(updatedUser);
-  }
+    const whereConditions: FindOptionsWhere<User>[] = [];
+    if (username) whereConditions.push({ username: username.toLowerCase() });
+    if (email)    whereConditions.push({ email: email.toLowerCase() });
+    if (dni)      whereConditions.push({ dni });
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(id);
-
-    const { username, email, dni, password, roleId } = updateUserDto;
-    if (username || email || dni) {
-      const existingUser = await this.userRepo.findOne({
-        where: [
-          { username: username?.toLowerCase() },
-          { email: email?.toLowerCase() },
-          { dni: dni },
-        ],
-      });
-
+    if (whereConditions.length > 0) {
+      const existingUser = await this.userRepo.findOne({ where: whereConditions });
       if (existingUser && existingUser.id !== id) {
         throw new ConflictException('El username, email o DNI ya están en uso');
       }
     }
 
-    if (password) {
-      updateUserDto.password = await bcrypt.hash(password, 10);
-    }
+    if (password) rest['password'] = await bcrypt.hash(password, 10);
+    if (username) rest['username'] = username.toLowerCase();
+    if (email)    rest['email']    = email.toLowerCase();
+    if (dni)      rest['dni']      = dni;
+    if (roleId)   userEntity.role  = { id: roleId } as Role;
 
-    if (updateUserDto.username)
-      updateUserDto.username = updateUserDto.username.toLowerCase();
-    if (updateUserDto.email)
-      updateUserDto.email = updateUserDto.email.toLowerCase();
-
-    if (roleId) {
-      user.role = { id: roleId } as Role;
-    }
-
-    const updatedUser = this.userRepo.merge(user, updateUserDto);
+    const updatedUser = this.userRepo.merge(userEntity, rest);
+    updatedUser.updatedBy = user.username;
     return await this.userRepo.save(updatedUser);
   }
 
-  async remove(id: string): Promise<User> {
-    const user = await this.findOne(id);
-    return await this.userRepo.softRemove(user);
+  async remove(id: string, user: JwtPayload): Promise<User> {
+    const userEntity = await this.findOne(id);
+    userEntity.deletedBy = user.username;
+    await this.userRepo.save(userEntity);
+    return await this.userRepo.softRemove(userEntity);
   }
 
   async findOneByUsernameWithPassword(username: string): Promise<User> {
     const user = await this.userRepo.findOne({
       where: { username: username.toLowerCase() },
-      select: ['id', 'username', 'password', 'email', 'active'],
+      select: ['id', 'username', 'password', 'email'],
       relations: ['role'],
     });
 

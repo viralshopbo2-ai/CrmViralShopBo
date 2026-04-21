@@ -6,25 +6,34 @@
   Param,
   Delete,
   ParseUUIDPipe,
-  Patch,
+  Patch, Query,
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
+@ApiBearerAuth()
+@Roles('SuperAdmin')
 @Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Post()
-  create(@Body() createRoleDto: CreateRoleDto) {
-    return this.rolesService.create(createRoleDto);
+  create(
+    @Body() createRoleDto: CreateRoleDto,
+    @CurrentUser() user: JwtPayload
+  ) {
+    return this.rolesService.create(createRoleDto, user);
   }
 
   @Get()
-  findAll() {
-    return this.rolesService.findAll();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.rolesService.findAll(pagination);
   }
 
   @Get(':id')
@@ -37,12 +46,15 @@ export class RolesController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateRoleDto: UpdateRoleDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.rolesService.update(id, updateRoleDto);
+    return this.rolesService.update(id, updateRoleDto, user);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.rolesService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload) {
+    return this.rolesService.remove(id, user);
   }
 }

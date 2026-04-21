@@ -18,17 +18,13 @@ export class AuthService {
       username.toLowerCase(),
     );
 
-    if (!user || !user.active) {
-      throw new UnauthorizedException('Invalid usr credentials');
-    }
-
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid psw credentials');
     }
 
     const payload = {
-      id: user.id,
+      sub: user.id,
       username: user.username,
       role: user.role?.name,
     };
@@ -41,6 +37,18 @@ export class AuthService {
       },
       accessToken: this.jwtService.sign(payload),
       refreshToken: this.jwtService.sign(payload, { expiresIn: '7d' }),
+    };
+  }
+
+  async refresh(user: any) {
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      role: user.role,
+    };
+
+    return {
+      accessToken: this.jwtService.sign(payload),
     };
   }
 }

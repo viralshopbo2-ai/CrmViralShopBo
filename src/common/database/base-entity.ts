@@ -10,9 +10,6 @@ export abstract class BaseAuditEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ default: true })
-  active: boolean;
-
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
