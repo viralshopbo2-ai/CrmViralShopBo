@@ -6,6 +6,11 @@ import * as dotenv from 'dotenv';
 import { RolesModule } from './roles/roles.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import {ProductsModule} from "./products/products.module";
+import {CloudinaryModule} from "./cloudinary/cloudinary.module";
+import {APP_GUARD} from "@nestjs/core";
+import {JwtAuthGuard} from "./common/guards/jwt-auth.guard";
+import {RolesGuard} from "./auth/guards/roles.guard";
 
 dotenv.config();
 @Module({
@@ -33,6 +38,19 @@ dotenv.config();
     UsersModule,
     RolesModule,
     AuthModule,
+    ProductsModule,
+    CloudinaryModule,
   ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
+
 })
 export class AppModule {}

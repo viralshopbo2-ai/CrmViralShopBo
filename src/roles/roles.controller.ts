@@ -18,7 +18,7 @@ import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiBearerAuth()
-@Roles('SuperAdmin')
+@Roles('superadmin')
 @Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}

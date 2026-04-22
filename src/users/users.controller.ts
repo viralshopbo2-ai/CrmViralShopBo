@@ -19,12 +19,11 @@ import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiBearerAuth()
-@Roles('SuperAdmin')
+@Roles('superadmin')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
   @Post()
-  @Public()
   create(
     @Body() createUserDto: CreateUserDto,
     @CurrentUser() user: JwtPayload,
