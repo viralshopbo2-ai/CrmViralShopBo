@@ -45,7 +45,17 @@ export class ProductsService {
 
     async update(id: string, updateProductDto: UpdateProductDto, user: JwtPayload): Promise<Product> {
         const product = await this.findOne(id);
-        const updatedProduct = this.productRepo.merge(product, updateProductDto);
+
+        const mediaFields = new Set(['images', 'video', 'gif']);
+
+        // Strip undefined; also strip null for media fields (json column quirk in TypeORM/MySQL)
+        const cleanDto = Object.fromEntries(
+            Object.entries(updateProductDto).filter(([k, v]) =>
+                v !== undefined && !(mediaFields.has(k) && v === null),
+            ),
+        );
+
+        const updatedProduct = this.productRepo.merge(product, cleanDto);
         updatedProduct.updatedBy = user.username;
         return await this.productRepo.save(updatedProduct);
     }

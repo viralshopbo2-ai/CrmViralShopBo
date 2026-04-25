@@ -1,4 +1,5 @@
 import { NestFactory, Reflector } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { RolesGuard } from './auth/guards/roles.guard';
@@ -8,6 +9,15 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const reflector = app.get(Reflector);
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,       // strip properties not in DTO
+      forbidNonWhitelisted: false,
+      transform: true,       // auto-transform payloads to DTO instances
+      transformOptions: { excludeExtraneousValues: false },
+    }),
+  );
 
   app.useGlobalGuards(
     new JwtAuthGuard(reflector),
