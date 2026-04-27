@@ -33,15 +33,12 @@ export class Product extends BaseAuditEntity {
     @Column({ type: 'json', nullable: true })
     frequentlyQuestions: { question: string; answer: string }[];
 
-    // Cloudinary — imágenes (máximo 5)
-    @Column({ type: 'json', nullable: true })
+    @Column('simple-array', { nullable: true })
     images: string[];
 
-    // Cloudinary — video
     @Column({ nullable: true })
     video: string;
 
-    // Cloudinary — gif
     @Column({ nullable: true })
     gif: string;
 }
